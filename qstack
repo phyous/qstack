@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+python qstack.py
+sleep 2
+./imgcat stackoverflow.png
