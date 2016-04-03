@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
-python qstack.py
-sleep 2
-./imgcat stackoverflow.png
+name=$@
+
+if [[ -n "$name" ]]; then
+    python qstack.py $name
+    sleep 1
+    ./imgcat stackoverflow.png
+else
+    echo "argument error"
+fi
+
