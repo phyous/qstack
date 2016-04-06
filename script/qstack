@@ -3,7 +3,7 @@
 name=$@
 
 if [[ -n "$name" ]]; then
-    python qstack.py $name
+    python qstack-phantom.py $name
     sleep 1
     ./imgcat stackoverflow.png
 else
