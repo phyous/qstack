@@ -3,3 +3,5 @@ beautifulsoup4
 requests
 webkit2png
 Pillow
+Flask
+slacker
