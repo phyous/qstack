@@ -4,10 +4,8 @@ import os, time
 
 from src.util.query_util import QueryUtil
 from selenium import webdriver
-from PIL import Image
 from slacker import Slacker
-import StringIO
-import base64
+from multiprocessing import Process
 
 api = Blueprint('api', __name__)
 
@@ -21,7 +19,13 @@ driver.set_window_size(1024, 768)
 
 @api.route('/api/qstack')
 def get_gist():
-    print request.args
+    p = Process(target=process_request, args=(request,))
+    p.start()
+    response_json = {'text': "processing request"}
+    return jsonify(**response_json)
+    
+def process_request(req):
+    print req.args
     search_query = request.args['text']
     results = QueryUtil.search_domain("stackoverflow.com/questions", search_query, 1)
     stack_overflow_url = results[0]
@@ -41,6 +45,3 @@ def get_gist():
     
     ret = slack.files.upload(filename, channels=request.args['channel_id'], filename=filename, title=stack_overflow_url)
     print ret
-
-    response_json = {'text': stack_overflow_url}
-    return jsonify(**response_json)
