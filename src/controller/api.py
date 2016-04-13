@@ -39,7 +39,7 @@ def process_request(req):
         QueryUtil.extract_image(stack_overflow_url, driver, filename, None)
     except Exception as e:
         reponse = "No results for for query '{}'".format(search_query)
-        slack.chat.post_message(request.args['channel_id'], reponse)
+        slack.chat.post_message(request.args['channel_id'], reponse, username="qstack", icon_emoji="zap")
         response_json = {'text': reponse}
         return jsonify(**response_json)
     
