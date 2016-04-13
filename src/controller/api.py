@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 
-import sys,os,time
-from src.scraper.xgoogle.search import GoogleSearch, SearchError
+import os, time
+
+from src.util.query_util import QueryUtil
 from selenium import webdriver
 from PIL import Image
 from slacker import Slacker
@@ -10,46 +11,36 @@ import base64
 
 api = Blueprint('api', __name__)
 
+
 @api.route('/')
 def home():
     return 'Hello Slack!'
 
+driver = webdriver.PhantomJS()
+driver.set_window_size(1024, 768)
+
 @api.route('/api/qstack')
 def get_gist():
     print request.args
-    search_query = ' '.join(request.args['text'])
-    stack_overflow_url = None
-    try:
-        gs = GoogleSearch("stackoverflow.com: {}".format(search_query))
-        gs.results_per_page = 1
-        results = gs.get_results()
-        stack_overflow_url = [res.url.encode("utf8") for res in results][0]
-    except SearchError, e:
-        print "Search failed: %s" % e
-    
+    search_query = request.args['text']
+    results = QueryUtil.search_domain("stackoverflow.com/questions", search_query, 1)
+    stack_overflow_url = results[0]
     print stack_overflow_url
     
-    driver = webdriver.PhantomJS() # or add to your PATH
-    driver.set_window_size(1024, 768) # optional
-    driver.get(stack_overflow_url)
-    element = driver.find_element_by_class_name('answer')
-    location = element.location
-    size = element.size
-    
-    im = Image.open(StringIO.StringIO(base64.decodestring(driver.get_screenshot_as_base64())))
-    left = location['x']
-    top = location['y']
-    right = location['x'] + size['width']
-    bottom = location['y'] + size['height']
-    
-    im = im.crop((left, top, right, bottom)) # defines crop points
-    filename = "./inbox/stackoverflow_{}.png".format(int(time.time()))
-    im.save(filename) # saves new cropped image
-    
-    token = os.environ['SLACK_TOKEN']      # found at https://api.slack.com/web#authentication
+    token = os.environ['SLACK_TOKEN']  # found at https://api.slack.com/web#authentication
     slack = Slacker(token)
+
+    try:
+        filename = "./inbox/stackoverflow_{}.png".format(int(time.time()))
+        QueryUtil.extract_image(stack_overflow_url, driver, filename, None)
+    except Exception as e:
+        reponse = "No results for for query '{}'".format(search_query)
+        slack.chat.post_message(request.args['channel_id'], reponse)
+        response_json = {'text': reponse}
+        return jsonify(**response_json)
+    
     ret = slack.files.upload(filename, channels=request.args['channel_id'], filename=filename, title=stack_overflow_url)
     print ret
 
-    response_json = {'text':stack_overflow_url}
+    response_json = {'text': stack_overflow_url}
     return jsonify(**response_json)
