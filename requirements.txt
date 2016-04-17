@@ -5,3 +5,5 @@ webkit2png
 Pillow
 Flask
 slacker
+selenium
+Flask-Testing

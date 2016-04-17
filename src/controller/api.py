@@ -14,17 +14,18 @@ api = Blueprint('api', __name__)
 def home():
     return 'Hello Slack!'
 
-driver = webdriver.PhantomJS()
-driver.set_window_size(1024, 768)
 
 @api.route('/api/qstack')
 def get_gist():
-    p = Process(target=process_request, args=(request,))
+    p = Process(target=process_request_visual, args=(request,))
     p.start()
     response_json = {'text': "processing request"}
     return jsonify(**response_json)
+
+driver = webdriver.PhantomJS()
+driver.set_window_size(1024, 768)
     
-def process_request(req):
+def process_request_visual(req):
     print req.args
     search_query = request.args['text']
     results = QueryUtil.search_domain("stackoverflow.com/questions", search_query, 1)
