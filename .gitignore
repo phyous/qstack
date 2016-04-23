@@ -2,3 +2,4 @@
 inbox/*.png
 ghostdriver.log
 *.pyc
+*.lprof
