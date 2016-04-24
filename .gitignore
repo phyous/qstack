@@ -3,3 +3,4 @@ inbox/*.png
 ghostdriver.log
 *.pyc
 *.lprof
+qstack.db

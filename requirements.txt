@@ -7,3 +7,4 @@ Flask
 slacker
 selenium
 Flask-Testing
+flask-sqlalchemy

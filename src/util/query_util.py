@@ -1,7 +1,5 @@
 from src.scraper.xgoogle.search import GoogleSearch, SearchError
-from selenium import webdriver
 from PIL import Image
-from slacker import Slacker
 import StringIO
 import base64
 
