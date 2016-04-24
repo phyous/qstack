@@ -28,13 +28,15 @@ def get_query(id):
 @api.route('/api/qstack')
 def get_gist():
     argument = request.args['text']
-    command = parse_command(argument)
+    command = Command.parse(argument)
+    if command == Command.LIST: return list_current_links(request)
+    
     stack_overflow_url = retreive_url(command, request)
     
     if stack_overflow_url:
         p = Process(target=process_request_visual, args=(request, stack_overflow_url))
         p.start()
-        response_json = {'text': "Found result: {}".format(stack_overflow_url)}
+        response_json = {'text': "Retrieving result: {}".format(stack_overflow_url)}
         return jsonify(**response_json) 
     else:
         if command == Command.NEXT:
@@ -42,7 +44,17 @@ def get_gist():
         elif command == Command.QUERY:
             response_json = {'text': "No results found for {}".format(request.args['text'])}
         return jsonify(**response_json)
-    
+
+def list_current_links(req):
+    existing_query = Query.find_latest_query(req.args["user_id"],req.args["channel_id"], req.args["team_id"])
+    if existing_query:
+        link_list = existing_query.result_list()
+        response_json = {'text': "The following results were found for query <{}>:\n{}"
+            .format(existing_query.query_str, '\n'.join(map(lambda x: str(x), link_list)))}
+    else:
+        response_json = {'text': "Please make a query before asking for result listing"}
+
+    return jsonify(**response_json)
 
 driver = webdriver.PhantomJS()
 driver.set_window_size(1024, 768)
@@ -65,7 +77,7 @@ def process_request_visual(req, stack_overflow_url):
 
 def retreive_url(command, req):
     if command == Command.NEXT:
-        stack_overflow_url = retreive_next_existing_session(req)
+        stack_overflow_url = retrieve_next_existing_session(req)
         return stack_overflow_url
     else:
         results = QueryUtil.search_domain("site:www.stackoverflow.com/questions/", req.args['text'], 20)
@@ -75,13 +87,6 @@ def retreive_url(command, req):
         stack_overflow_url = results[0]
         return stack_overflow_url
 
-def parse_command(cmd):
-    formatted_cmd = cmd.lower().strip()
-    if formatted_cmd == "next":
-        return Command.NEXT
-    else:
-        return Command.QUERY    
-
 def store_new_session(req, search_results):
     event = Event(Command.QUERY, 0, 1)
     query = Query(req.args["user_id"],req.args["channel_id"], req.args["team_id"], req.args["text"], search_results)
@@ -90,7 +95,7 @@ def store_new_session(req, search_results):
     db.session.commit()
     return
 
-def retreive_next_existing_session(req):
+def retrieve_next_existing_session(req):
     existing_query = Query.find_latest_query(req.args["user_id"],req.args["channel_id"], req.args["team_id"])
     if existing_query:
         next_result = Event.get_next_result(existing_query)
@@ -102,7 +107,4 @@ def retreive_next_existing_session(req):
             existing_query.events.append(event)
             db.session.commit()
             return existing_query.result_list()[next_result]
-        else:
-            return None
-    else:
-        return None
+    return None
